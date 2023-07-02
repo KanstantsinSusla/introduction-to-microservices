@@ -1,4 +1,4 @@
-package com.epam.resourceservice;
+package com.epam.resourceservice.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

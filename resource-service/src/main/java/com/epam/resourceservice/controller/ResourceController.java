@@ -1,6 +1,6 @@
 package com.epam.resourceservice.controller;
 
-import com.epam.resourceservice.ResourceValidationException;
+import com.epam.resourceservice.exception.ResourceValidationException;
 import com.epam.resourceservice.model.Resource;
 import com.epam.resourceservice.service.ResourceService;
 import lombok.extern.log4j.Log4j2;
@@ -16,7 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xml.sax.SAXException;
 
-import javax.validation.constraints.Size;
+//import javax.validation.constraints.Size;
 import java.io.*;
 import java.util.Collections;
 import java.util.List;
@@ -71,7 +71,7 @@ public class ResourceController {
 
     @Validated
     @DeleteMapping()
-    public List<Long> deleteResource(@RequestParam (value = "ids") @Size(max = 200) List<Long> ids) {
+    public List<Long> deleteResource(@RequestParam (value = "ids") List<Long> ids) {
         log.info("Process delete resource.");
         return resourceService.deleteResourcesByIds(ids);
     }
