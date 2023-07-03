@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -30,14 +31,9 @@ public class ResourceServiceImpl implements ResourceService {
 
     @Override
     public List<Long> deleteResourcesByIds(List<Long> ids) {
-        List<Long> deletedResourceIds = new ArrayList<>();
-
-        for (Long id : ids) {
-            if (resourceDao.existsById(id)) {
-                resourceDao.deleteById(id);
-                deletedResourceIds.add(id);
-            }
-        }
-        return deletedResourceIds;
+        return ids.stream()
+                .filter(id -> resourceDao.existsById(id))
+                .peek(id -> resourceDao.deleteById(id))
+                .collect(Collectors.toList());
     }
 }

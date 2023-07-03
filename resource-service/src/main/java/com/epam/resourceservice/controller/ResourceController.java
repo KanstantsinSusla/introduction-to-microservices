@@ -2,6 +2,7 @@ package com.epam.resourceservice.controller;
 
 import com.epam.resourceservice.exception.ResourceValidationException;
 import com.epam.resourceservice.model.Resource;
+import com.epam.resourceservice.model.SongRequest;
 import com.epam.resourceservice.service.ResourceService;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.IOUtils;
@@ -14,9 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.xml.sax.SAXException;
 
-//import javax.validation.constraints.Size;
+import javax.validation.constraints.Size;
 import java.io.*;
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +32,10 @@ public class ResourceController {
     @Autowired
     private ResourceService resourceService;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
     @GetMapping(value = "/{id}")
-    @ResponseBody
     public byte[] getResourceById(@PathVariable ("id") Long id) {
         log.info("Process get resource by id.");
         Resource resource = resourceService.getResourceById(id);
@@ -54,13 +58,15 @@ public class ResourceController {
 
         Metadata metadata = new Metadata();
         Mp3Parser parser = new Mp3Parser();
+        BodyContentHandler handler = new BodyContentHandler();
 
-        parser.parse(firstClone, new BodyContentHandler(), metadata, new ParseContext());
+        parser.parse(firstClone, handler, metadata, new ParseContext());
 
         Long resourceId;
 
         if (metadata.get("xmpDM:audioCompressor").equalsIgnoreCase("mp3")) {
             resourceId = resourceService.addResource(IOUtils.toByteArray(secondClone));
+            makeRequestToSongService(metadata, resourceId);
 
         } else {
             throw new ResourceValidationException("Validation failed or request body is invalid MP3.");
@@ -69,10 +75,22 @@ public class ResourceController {
         return Collections.singletonMap("id", resourceId);
     }
 
-    @Validated
     @DeleteMapping()
-    public List<Long> deleteResource(@RequestParam (value = "ids") List<Long> ids) {
+    public List<Long> deleteResource(@RequestParam (value = "ids") @Size(max = 200) List<Long> ids) {
         log.info("Process delete resource.");
         return resourceService.deleteResourcesByIds(ids);
+    }
+
+    private void makeRequestToSongService(Metadata metadata, Long resourceId) {
+        SongRequest songRequest = new SongRequest();
+
+        songRequest.setName(metadata.get("title"));
+        songRequest.setArtist(metadata.get("xmpDM:artist"));
+        songRequest.setAlbum(metadata.get("xmpDM:album"));
+        songRequest.setLength(metadata.get("xmpDM:duration"));
+        songRequest.setResourceId(resourceId);
+        songRequest.setYear(metadata.get("xmpDM:releaseDate"));
+
+        restTemplate.postForObject("http://localhost:8081/songs/", songRequest, Object.class);
     }
 }
