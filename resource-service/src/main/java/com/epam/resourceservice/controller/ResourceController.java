@@ -12,6 +12,7 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +35,9 @@ public class ResourceController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Value("${songservice.url}")
+    private String songServiceUrl;
 
     @GetMapping(value = "/{id}")
     public byte[] getResourceById(@PathVariable ("id") Long id) {
@@ -91,6 +95,6 @@ public class ResourceController {
         songRequest.setResourceId(resourceId);
         songRequest.setYear(metadata.get("xmpDM:releaseDate"));
 
-        restTemplate.postForObject("http://localhost:8081/songs/", songRequest, Object.class);
+        restTemplate.postForObject(songServiceUrl, songRequest, Object.class);
     }
 }
