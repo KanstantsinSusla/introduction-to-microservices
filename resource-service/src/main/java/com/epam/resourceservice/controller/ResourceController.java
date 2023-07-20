@@ -12,7 +12,8 @@ import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -34,10 +35,10 @@ public class ResourceController {
     private ResourceService resourceService;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private LoadBalancerClient loadBalancerClient;
 
-    @Value("${songservice.url}")
-    private String songServiceUrl;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @GetMapping(value = "/{id}")
     public byte[] getResourceById(@PathVariable ("id") Long id) {
@@ -95,6 +96,8 @@ public class ResourceController {
         songRequest.setResourceId(resourceId);
         songRequest.setYear(metadata.get("xmpDM:releaseDate"));
 
-        restTemplate.postForObject(songServiceUrl, songRequest, Object.class);
+        ServiceInstance songServiceClient = loadBalancerClient.choose("song-service");
+
+        restTemplate.postForObject(songServiceClient.getUri() + "/songs", songRequest, Object.class);
     }
 }

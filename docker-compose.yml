@@ -1,6 +1,12 @@
 version: '3'
 
 services:
+# Discovery service
+  discovery-service-app:
+    build: /discovery-service/.
+    ports:
+      - "8761:8761"
+
 # Resource service
   resource-db:
     image: postgres
@@ -20,8 +26,9 @@ services:
       - resource-service/.env
     depends_on:
       - resource-db
+      - discovery-service-app
 
-# Song service
+# Song services
   song-db:
     image: postgres
     container_name: "song-postgre"
@@ -32,7 +39,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: song-db
 
-  song-service-app:
+  song-service-app1:
     build: /song-service/.
     ports:
       - "8081:8081"
@@ -40,3 +47,14 @@ services:
       - song-service/.env
     depends_on:
       - song-db
+      - discovery-service-app
+
+  song-service-app2:
+    build: /song-service/.
+    ports:
+      - "8082:8082"
+    env_file:
+      - song-service/.env
+    depends_on:
+      - song-db
+      - discovery-service-app
